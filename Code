@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="theme-color" content="#2b7cff">
+<title>IAN’s Offline AI</title>
+<link id="fav" rel="icon" href="data:,">
+<style>
+:root{
+  --bg:#f4f6fb; --card:#fff; --text:#1b2030; --muted:#6b7385; --line:#e1e5ef;
+  --accent:#2b7cff; --accent-text:#fff; --ian:#eaf0ff; --user:#2b7cff; --user-text:#fff;
+  --ok:#1faa6b; --warn:#d98a00; --danger:#e5484d; --hover:rgba(43,124,255,.09);
+  box-sizing:border-box; padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0f1320; --card:#171c2e; --text:#e8ecf8; --muted:#8c95ad; --line:#272e47;
+    --accent:#4d94ff; --accent-text:#0b1020; --ian:#1f2740; --user:#4d94ff; --user-text:#0b1020;
+    --hover:rgba(77,148,255,.14); color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0f1320; --card:#171c2e; --text:#e8ecf8; --muted:#8c95ad; --line:#272e47;
+  --accent:#4d94ff; --accent-text:#0b1020; --ian:#1f2740; --user:#4d94ff; --user-text:#0b1020;
+  --hover:rgba(77,148,255,.14); color-scheme:dark;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;overscroll-behavior:none;position:fixed;inset:0;background:var(--bg);touch-action:manipulation;-webkit-text-size-adjust:100%}
+html{height:var(--h,100%)}
+body{background:var(--bg);color:var(--text);font:16px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;transition:transform .18s cubic-bezier(.2,.8,.2,1),background .2s,opacity .2s,border-color .2s,box-shadow .2s}
+button:active:not(:disabled){transform:scale(.92)}
+button:disabled{cursor:default}
+@media (hover:hover){.icon:hover,.chip:hover:not(:disabled){background:var(--hover);transform:translateY(-1px)}#send:hover:not(:disabled){transform:scale(1.07)}}
+.app{max-width:640px;height:100%;margin:0 auto;display:flex;flex-direction:column;position:relative;overflow:hidden}
+header{padding:12px 12px 10px;background:var(--card);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px}
+.icon{background:none;border:1px solid var(--line);border-radius:12px;width:40px;height:40px;color:var(--muted);display:grid;place-items:center;flex:none}
+.burger{width:18px;height:14px;position:relative}
+.burger span{position:absolute;left:0;width:100%;height:2px;border-radius:2px;background:currentColor;transition:transform .3s cubic-bezier(.2,.8,.2,1),opacity .2s,top .3s}
+.burger span:nth-child(1){top:0}.burger span:nth-child(2){top:6px}.burger span:nth-child(3){top:12px}
+.menu-open .burger span:nth-child(1){top:6px;transform:rotate(45deg)}
+.menu-open .burger span:nth-child(2){opacity:0}
+.menu-open .burger span:nth-child(3){top:6px;transform:rotate(-45deg)}
+.logo{width:38px;height:38px;flex:none;border-radius:11px;overflow:hidden;box-shadow:0 2px 8px rgba(43,124,255,.35)}
+.logo svg,.big svg{display:block;width:100%;height:100%}
+.title{flex:1;min-width:0}
+.title h1{margin:0;font-size:15px;letter-spacing:.4px;white-space:nowrap}
+.title p{margin:1px 0 0;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pill{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted);white-space:nowrap;flex:none}
+.pill i{display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--ok);margin-right:5px;transition:background .3s}
+.pill.busy i{background:var(--warn);animation:pulse 1s infinite}
+@keyframes pulse{50%{transform:scale(1.5);opacity:.5}}
+#log{flex:1;overflow-y:auto;overflow-x:hidden;padding:16px 14px;display:flex;flex-direction:column;gap:10px;-webkit-overflow-scrolling:touch}
+.msg{max-width:84%;padding:10px 13px;border-radius:16px;white-space:pre-wrap;overflow-wrap:anywhere}
+.msg.fx{animation:rise .3s cubic-bezier(.2,.8,.2,1)}
+@keyframes rise{from{opacity:0;transform:translateY(10px) scale(.97)}}
+.msg small{display:block;margin-top:5px;font-size:11px;opacity:.6}
+.you{align-self:flex-end;background:var(--user);color:var(--user-text);border-bottom-right-radius:5px}
+.ian{align-self:flex-start;background:var(--ian);border-bottom-left-radius:5px}
+.sys{align-self:center;max-width:94%;border:1px dashed var(--line);color:var(--muted);font-size:13px;text-align:center}
+.who{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:3px;letter-spacing:.4px}
+.dots span{display:inline-block;width:7px;height:7px;margin:0 2px;border-radius:50%;background:var(--muted);animation:b 1s infinite}
+.dots span:nth-child(2){animation-delay:.15s}.dots span:nth-child(3){animation-delay:.3s}
+@keyframes b{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-5px);opacity:1}}
+.empty{margin:auto;text-align:center;color:var(--muted);animation:rise .5s}
+.big{width:92px;height:92px;margin:0 auto 14px;border-radius:26px;overflow:hidden;box-shadow:0 10px 28px rgba(43,124,255,.4);animation:float 3.5s ease-in-out infinite}
+@keyframes float{50%{transform:translateY(-6px)}}
+.empty h2{margin:0 0 4px;color:var(--text);font-size:19px}
+.empty p{margin:0;font-size:14px}
+.chips{display:flex;gap:8px;padding:8px 14px 0;overflow-x:auto}
+.chip{flex:none;border:1px solid var(--line);background:var(--card);border-radius:99px;padding:6px 12px;font-size:13px;color:var(--muted)}
+.chip:disabled,#send:disabled,.icon:disabled{opacity:.4}
+form{display:flex;gap:8px;padding:10px 14px 14px;align-items:flex-end}
+textarea{flex:1;resize:none;max-height:120px;min-height:44px;padding:11px 14px;border-radius:22px;border:1px solid var(--line);background:var(--card);color:var(--text);font:inherit;outline:none;transition:border-color .2s,box-shadow .2s,opacity .2s}
+textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--hover)}
+textarea:disabled{opacity:.55}
+#send{width:44px;height:44px;border-radius:50%;border:0;background:var(--accent);color:var(--accent-text);font-size:19px;flex:none}
+.load{margin:10px 14px 0;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;gap:10px;font-size:13px;max-height:140px;overflow:hidden;transition:opacity .3s,transform .3s,max-height .35s,margin .35s,padding .35s,border-width .35s}
+.load.hide{opacity:0;max-height:0;margin-top:0;padding-top:0;padding-bottom:0;border-width:0;transform:translateY(-8px)}
+.load .tx{flex:1;min-width:0}
+.load b{display:block;font-size:13px}
+.load small{color:var(--muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar{height:5px;border-radius:5px;background:var(--line);margin-top:6px;overflow:hidden;display:none}
+.bar i{display:block;height:100%;width:0;background:var(--accent);transition:width .3s}
+.load.go .bar{display:block}
+#loadBtn{border:0;border-radius:10px;padding:9px 12px;background:var(--accent);color:var(--accent-text);font-weight:600;flex:none}
+#loadBtn:disabled{opacity:.4}
+.pend{margin:8px 14px 0;padding:8px 10px;border:1px solid var(--line);border-radius:14px;background:var(--card);display:flex;align-items:center;gap:10px;max-height:80px;overflow:hidden;transition:opacity .3s,transform .3s,max-height .35s,margin .35s,padding .35s,border-width .35s}
+.pend.hide{opacity:0;max-height:0;margin-top:0;padding-top:0;padding-bottom:0;border-width:0;transform:translateY(8px)}
+.pend .tx{flex:1;min-width:0}
+.pend b,.att b{display:block;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pend small,.att small{display:block;font-size:11.5px;opacity:.7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pend .x{width:32px;height:32px;font-size:13px}
+.th{width:40px;height:40px;flex:none;border-radius:10px;overflow:hidden;display:grid;place-items:center;background:var(--hover);font-size:11px;font-weight:700;letter-spacing:.3px}
+.th img{width:100%;height:100%;object-fit:cover}
+.att{display:flex;align-items:center;gap:8px;padding:6px 8px;margin-bottom:7px;border-radius:12px;background:rgba(127,127,127,.16);min-width:150px}
+.att .tx{min-width:0}
+#attachBtn{width:44px;height:44px;border-radius:50%;font-size:18px}
+/* drawer */
+#scrim{position:absolute;inset:0;background:rgba(8,12,24,.5);opacity:0;pointer-events:none;transition:opacity .3s;z-index:20}
+#drawer{position:absolute;top:0;bottom:0;left:0;width:min(84%,320px);background:var(--card);z-index:30;transform:translateX(-102%);transition:transform .35s cubic-bezier(.2,.8,.2,1);display:flex;flex-direction:column;visibility:hidden;padding-top:env(safe-area-inset-top,0px)}
+.menu-open #scrim{opacity:1;pointer-events:auto}
+.menu-open #drawer{transform:none}
+.dh{padding:16px 16px 10px;display:flex;align-items:center;gap:10px}
+.dh .logo{width:34px;height:34px}
+.dh h2{margin:0;font-size:17px;flex:1}
+#newBtn{margin:0 14px 10px;padding:11px;border:0;border-radius:12px;background:var(--accent);color:var(--accent-text);font-weight:600}
+#list{flex:1;overflow-y:auto;padding:0 8px 14px}
+.lbl{font-size:11px;letter-spacing:.6px;color:var(--muted);padding:8px 10px 4px;text-transform:uppercase}
+.row{display:block;width:100%;text-align:left;background:none;border:0;border-radius:12px;padding:10px 12px;margin-bottom:2px;overflow:hidden;max-height:80px;animation:rise .35s cubic-bezier(.2,.8,.2,1) backwards}
+.row.active{background:var(--hover)}
+.row:hover{background:var(--hover)}
+.row b{display:block;font-weight:600;font-size:14.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row span{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted);margin-top:2px}
+.row span em{font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row.gone{max-height:0;opacity:0;padding-top:0;padding-bottom:0;margin:0;transform:translateX(-30px);transition:all .3s cubic-bezier(.2,.8,.2,1)}
+.none{padding:24px 14px;text-align:center;color:var(--muted);font-size:14px}
+/* sheet */
+#sheet{position:absolute;left:0;right:0;bottom:0;z-index:50;background:var(--card);border-radius:22px 22px 0 0;padding:10px 16px calc(16px + env(safe-area-inset-bottom,0px));transform:translateY(105%);transition:transform .35s cubic-bezier(.2,.8,.2,1);visibility:hidden}
+#sheetScrim{position:absolute;inset:0;background:rgba(8,12,24,.5);opacity:0;pointer-events:none;transition:opacity .3s;z-index:40}
+.sheet-open #sheet{transform:none}
+.sheet-open #sheetScrim{opacity:1;pointer-events:auto}
+.grab{width:38px;height:4px;border-radius:4px;background:var(--line);margin:0 auto 12px}
+#sheetTitle{font-weight:700;text-align:center;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#sheetSub{font-size:12px;color:var(--muted);text-align:center;margin-bottom:12px}
+.sb{display:block;width:100%;padding:13px;margin-top:8px;border-radius:14px;border:1px solid var(--line);background:var(--card);font-weight:600}
+.sb.pri{background:var(--accent);color:var(--accent-text);border-color:var(--accent)}
+.sb.del{color:var(--danger);border-color:var(--danger)}
+.sb.del.sure{background:var(--danger);color:#fff;animation:shake .35s}
+@keyframes shake{25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+#drawer,#sheet{transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s linear .35s}
+.menu-open #drawer{visibility:visible;box-shadow:6px 0 30px rgba(0,0,0,.25);transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s}
+.sheet-open #sheet{visibility:visible;box-shadow:0 -10px 40px rgba(0,0,0,.3);transition:transform .35s cubic-bezier(.2,.8,.2,1),visibility 0s}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header>
+    <button class="icon" id="menuBtn" type="button" aria-label="Open chat history"><div class="burger"><span></span><span></span><span></span></div></button>
+    <div class="logo" id="logo"></div>
+    <div class="title"><h1>IAN’S OFFLINE AI</h1><p id="sub">Lightweight • Private • No internet</p></div>
+    <span class="pill" id="status"><i></i><span id="statusText">Demo mode</span></span>
+    <button class="icon" id="theme" type="button" aria-label="Toggle theme">◐</button>
+  </header>
+
+  <div class="load" id="load">
+    <div class="tx"><b id="loadTitle">Demo mode</b><small id="loadSub">Load the real AI (~950 MB, one-time download, then offline)</small><div class="bar"><i id="loadBar"></i></div></div>
+    <button id="loadBtn" type="button">Load AI</button>
+  </div>
+
+  <div id="log" aria-live="polite"></div>
+
+  <div class="chips">
+    <button class="chip" type="button" data-cmd="/help">/help</button>
+    <button class="chip" type="button" data-cmd="/history">/history</button>
+    <button class="chip" type="button" data-cmd="/clear">/clear</button>
+  </div>
+  <div class="pend hide" id="pend"></div>
+  <form id="form" autocomplete="off">
+    <button class="icon" id="attachBtn" type="button" aria-label="Attach file"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5l-8.6 8.6a5.5 5.5 0 0 1-7.8-7.8l8.6-8.6a3.7 3.7 0 0 1 5.2 5.2l-8.6 8.6a1.8 1.8 0 0 1-2.6-2.6l7.9-7.9"/></svg></button>
+    <input type="file" id="file" hidden>
+    <textarea id="box" rows="1" placeholder="Message IAN…" enterkeyhint="send"></textarea>
+    <button id="send" type="submit" aria-label="Send">➤</button>
+  </form>
+
+  <div id="scrim"></div>
+  <aside id="drawer" aria-label="Chat history">
+    <div class="dh"><div class="logo" id="logo2"></div><h2>Chats</h2></div>
+    <button id="newBtn" type="button">＋ New chat</button>
+    <div id="list"></div>
+  </aside>
+
+  <div id="sheetScrim"></div>
+  <div id="sheet" role="dialog" aria-modal="true">
+    <div class="grab"></div>
+    <div id="sheetTitle"></div><div id="sheetSub"></div>
+    <button class="sb pri" id="openBtn" type="button">Open chat</button>
+    <button class="sb del" id="delBtn" type="button">Delete chat</button>
+    <button class="sb" id="cancelBtn" type="button">Cancel</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var KEY = "ian_chats_v2", OLD = "ian_chat_v1", MAX_MSGS = 200, MAX_CHATS = 50, CONTEXT_MSGS = 4;
+  var $ = function(id){ return document.getElementById(id); };
+  var app = $("app"), log = $("log"), box = $("box"), sendBtn = $("send"), form = $("form"),
+      statusEl = $("status"), statusText = $("statusText"), menuBtn = $("menuBtn"), list = $("list");
+  var chips = document.querySelectorAll(".chip");
+  var store = {chats:[], current:null}, busy = false, sheetId = null, armed = false;
+
+  /* ---------- fit screen, block zoom ---------- */
+  function fit(){
+    var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    document.documentElement.style.setProperty("--h", Math.round(h) + "px");
+    window.scrollTo(0, 0);
+  }
+  fit();
+  window.addEventListener("resize", fit);
+  window.addEventListener("orientationchange", fit);
+  if(window.visualViewport){ window.visualViewport.addEventListener("resize", fit); window.visualViewport.addEventListener("scroll", fit); }
+  ["gesturestart", "gesturechange", "gestureend"].forEach(function(n){ document.addEventListener(n, function(e){ e.preventDefault(); }); });
+  document.addEventListener("touchmove", function(e){ if(e.touches && e.touches.length > 1) e.preventDefault(); }, {passive:false});
+  document.addEventListener("wheel", function(e){ if(e.ctrlKey) e.preventDefault(); }, {passive:false});
+
+  /* ---------- app icon ---------- */
+  var ICON = '<svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5aa2ff"/><stop offset="1" stop-color="#2a45e8"/></linearGradient></defs><rect width="64" height="64" fill="url(#g)"/><path d="M16 15h32a7 7 0 0 1 7 7v17a7 7 0 0 1-7 7H34l-9 9v-9h-9a7 7 0 0 1-7-7V22a7 7 0 0 1 7-7z" fill="#fff"/><text x="32" y="38" text-anchor="middle" font-family="Arial,sans-serif" font-weight="800" font-size="20" fill="#2a45e8">IAN</text><path d="M52 6l1.8 4.2L58 12l-4.2 1.8L52 18l-1.8-4.2L46 12l4.2-1.8z" fill="#ffd84d"/></svg>';
+  $("logo").innerHTML = ICON; $("logo2").innerHTML = ICON;
+  $("fav").href = "data:image/svg+xml," + encodeURIComponent(ICON);
+
+  /* ---------- storage ---------- */
+  function save(){ try{ localStorage.setItem(KEY, JSON.stringify(store)); }catch(e){} }
+  function uid(){ return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function load(){
+    try{
+      var d = JSON.parse(localStorage.getItem(KEY) || "null");
+      if(d && Array.isArray(d.chats)){ store = d; return; }
+      var o = JSON.parse(localStorage.getItem(OLD) || "[]");
+      if(Array.isArray(o) && o.length){
+        var m = o.filter(function(x){ return x && x.role && typeof x.content === "string"; });
+        if(m.length){ store.chats.push({id:uid(), title:titleOf(m), ts:Date.now(), msgs:m}); store.current = store.chats[0].id; }
+      }
+    }catch(e){}
+  }
+  function titleOf(msgs){
+    for(var i = 0; i < msgs.length; i++) if(msgs[i].role === "user"){
+      var t = msgs[i].content.replace(/\s+/g, " ").trim();
+      return t.length > 30 ? t.slice(0, 29) + "…" : t;
+    }
+    return "New chat";
+  }
+  function find(id){ for(var i = 0; i < store.chats.length; i++) if(store.chats[i].id === id) return store.chats[i]; return null; }
+  function cur(){ return find(store.current); }
+  function newChat(){
+    var c = {id:uid(), title:"New chat", ts:Date.now(), msgs:[]};
+    store.chats.unshift(c); store.chats = store.chats.slice(0, MAX_CHATS); store.current = c.id; save(); return c;
+  }
+
+  /* ---------- helpers ---------- */
+  function fmt(ts){
+    var d = new Date(ts), n = new Date();
+    return d.toDateString() === n.toDateString()
+      ? d.toLocaleTimeString([], {hour:"numeric", minute:"2-digit"})
+      : d.toLocaleDateString([], {month:"short", day:"numeric"});
+  }
+  function scroll(){ log.scrollTop = log.scrollHeight; }
+  function addMsg(role, text, ts, fx, att){
+    var e = log.querySelector(".empty"); if(e) e.remove();
+    var el = document.createElement("div");
+    el.className = "msg " + role + (fx ? " fx" : "");
+    if(role === "ian"){ var w = document.createElement("div"); w.className = "who"; w.textContent = "IAN"; el.appendChild(w); }
+    if(att){
+      var card = document.createElement("div"); card.className = "att";
+      var th = document.createElement("div"); th.className = "th";
+      if(att.thumb){ var im = document.createElement("img"); im.src = att.thumb; im.alt = ""; th.appendChild(im); } else th.textContent = ICONS[att.kind] || "FILE";
+      var tx = document.createElement("div"); tx.className = "tx";
+      var nb = document.createElement("b"); nb.textContent = att.name;
+      var ns = document.createElement("small"); ns.textContent = att.kind + " • " + human(att.size);
+      tx.appendChild(nb); tx.appendChild(ns); card.appendChild(th); card.appendChild(tx); el.appendChild(card);
+    }
+    var t = document.createElement("span"); t.textContent = text; el.appendChild(t);
+    if(role !== "sys"){ var s = document.createElement("small"); s.textContent = fmt(ts || Date.now()); el.appendChild(s); }
+    log.appendChild(el); scroll(); return el;
+  }
+  function renderLog(){
+    log.innerHTML = "";
+    var c = cur();
+    if(!c || !c.msgs.length){
+      var e = document.createElement("div"); e.className = "empty";
+      e.innerHTML = '<div class="big">' + ICON + '</div><h2>Hi, I’m IAN</h2><p>Ask me something short and simple.</p>';
+      log.appendChild(e); return;
+    }
+    c.msgs.forEach(function(m){ addMsg(m.role === "user" ? "you" : "ian", m.content, m.ts, false, m.att); });
+  }
+  function setBusy(b){
+    busy = b; box.disabled = b; sendBtn.disabled = b; menuBtn.disabled = b; $("attachBtn").disabled = b;
+    chips.forEach(function(c){ c.disabled = b; });
+    statusEl.classList.toggle("busy", b);
+    statusText.textContent = b ? "Thinking…" : idleText();
+    if(!b) box.focus();
+  }
+  function grow(){ box.style.height = "auto"; box.style.height = Math.min(box.scrollHeight, 120) + "px"; }
+
+  /* ---------- drawer + sheet ---------- */
+  function renderList(){
+    list.innerHTML = "";
+    var chats = store.chats.slice().sort(function(a, b){ return b.ts - a.ts; })
+                  .filter(function(c){ return c.msgs.length || c.id === store.current; });
+    if(!chats.length){ list.innerHTML = '<div class="none">No chats yet</div>'; return; }
+    var l = document.createElement("div"); l.className = "lbl"; l.textContent = "Recent"; list.appendChild(l);
+    chats.forEach(function(c, i){
+      var b = document.createElement("button");
+      b.type = "button"; b.className = "row" + (c.id === store.current ? " active" : "");
+      b.dataset.id = c.id; b.style.animationDelay = (i * 30) + "ms";
+      var last = c.msgs.length ? c.msgs[c.msgs.length - 1].content.replace(/\s+/g, " ") : "Empty chat";
+      var t = document.createElement("b"); t.textContent = c.title;
+      var s = document.createElement("span"), p = document.createElement("em"), d = document.createElement("em");
+      p.textContent = last; d.textContent = fmt(c.ts); s.appendChild(p); s.appendChild(d);
+      b.appendChild(t); b.appendChild(s);
+      b.addEventListener("click", function(){ openSheet(c.id); });
+      list.appendChild(b);
+    });
+  }
+  function openDrawer(){ if(busy) return; renderList(); app.classList.add("menu-open"); }
+  function closeDrawer(){ app.classList.remove("menu-open"); }
+  function openSheet(id){
+    var c = find(id); if(!c) return;
+    sheetId = id; armed = false;
+    $("sheetTitle").textContent = c.title;
+    $("sheetSub").textContent = Math.floor(c.msgs.length / 2) + " replies • " + fmt(c.ts);
+    $("delBtn").textContent = "Delete chat"; $("delBtn").classList.remove("sure");
+    app.classList.add("sheet-open");
+  }
+  function closeSheet(){ app.classList.remove("sheet-open"); }
+  function openChat(id){
+    store.current = id; save(); renderLog(); closeSheet(); closeDrawer();
+  }
+  function deleteChat(id){
+    var row = list.querySelector('[data-id="' + id + '"]');
+    closeSheet();
+    if(row) row.classList.add("gone");
+    setTimeout(function(){
+      store.chats = store.chats.filter(function(c){ return c.id !== id; });
+      if(store.current === id){
+        var next = store.chats.slice().sort(function(a, b){ return b.ts - a.ts; })[0];
+        if(next) store.current = next.id; else newChat();
+        renderLog();
+      }
+      save(); renderList();
+    }, 300);
+  }
+  menuBtn.addEventListener("click", function(){ app.classList.contains("menu-open") ? closeDrawer() : openDrawer(); });
+  $("scrim").addEventListener("click", closeDrawer);
+  $("sheetScrim").addEventListener("click", closeSheet);
+  $("cancelBtn").addEventListener("click", closeSheet);
+  $("openBtn").addEventListener("click", function(){ if(sheetId) openChat(sheetId); });
+  $("delBtn").addEventListener("click", function(){
+    if(!sheetId) return;
+    if(!armed){ armed = true; this.textContent = "Tap again to confirm"; this.classList.add("sure"); return; }
+    deleteChat(sheetId);
+  });
+  $("newBtn").addEventListener("click", function(){
+    var c = cur();
+    if(!c || c.msgs.length) newChat();
+    renderLog(); closeDrawer(); box.focus();
+  });
+  document.addEventListener("keydown", function(e){
+    if(e.key === "Escape"){ if(app.classList.contains("sheet-open")) closeSheet(); else closeDrawer(); }
+  });
+
+  /* ---------- real AI: Qwen2.5-0.5B via WebLLM (runs on your device with WebGPU) ---------- */
+  var MODEL_F16 = "Qwen2.5-0.5B-Instruct-q4f16_1-MLC", MODEL_F32 = "Qwen2.5-0.5B-Instruct-q4f32_1-MLC", MODEL_ID = MODEL_F16;
+  var WEBLLM_URL = "https://cdn.jsdelivr.net/npm/@mlc-ai/web-llm@0.2.78/+esm";
+  var SYSTEM = "You are IAN, a helpful offline AI. Use simple English and short answers. Answer the user's question directly.";
+  var engine = null, loading = false;
+  var loadEl = $("load"), loadTitle = $("loadTitle"), loadSub = $("loadSub"), loadBar = $("loadBar"), loadBtn = $("loadBtn");
+  function idleText(){ return engine ? "AI ready" : "Demo mode"; }
+  function setLoad(title, sub, pct){
+    loadTitle.textContent = title; loadSub.textContent = sub;
+    if(typeof pct === "number") loadBar.style.width = Math.round(pct * 100) + "%";
+  }
+  function loadFailed(msg){
+    loading = false; engine = null;
+    loadEl.classList.remove("go"); loadBtn.disabled = false; loadBtn.textContent = "Retry";
+    setLoad("Couldn’t load the AI model", msg + " Staying in demo mode.", 0);
+    if(!busy) statusText.textContent = idleText();
+  }
+  function withTimeout(p, ms, msg){
+    return new Promise(function(res, rej){
+      var t = setTimeout(function(){ rej(new Error(msg)); }, ms);
+      p.then(function(v){ clearTimeout(t); res(v); }, function(e){ clearTimeout(t); rej(e); });
+    });
+  }
+  var stallTimer = null, lastTick = 0;
+  function stopWatch(){ if(stallTimer){ clearInterval(stallTimer); stallTimer = null; } }
+  function loadModel(){
+    if(loading || engine) return;
+    if(!navigator.gpu){ loadFailed("This browser has no WebGPU. Use the latest Chrome on a newer phone."); return; }
+    loading = true; loadBtn.disabled = true; loadEl.classList.add("go");
+    setLoad("Checking your phone\u2026", "Looking for a compatible GPU", 0);
+    if(!busy) statusText.textContent = "Loading AI\u2026";
+    withTimeout(navigator.gpu.requestAdapter(), 10000, "Your GPU didn\u2019t respond.").then(function(ad){
+      if(!ad) throw new Error("No usable GPU found. This phone can\u2019t run the AI in the browser.");
+      MODEL_ID = (ad.features && ad.features.has("shader-f16")) ? MODEL_F16 : MODEL_F32;
+      setLoad("Checking connection\u2026", "Reaching the model server", 0);
+      return withTimeout(fetch("https://huggingface.co/mlc-ai/" + MODEL_ID + "/resolve/main/mlc-chat-config.json", {cache:"no-store"}),
+        15000, "Can\u2019t reach huggingface.co. Check your internet, VPN or ad blocker.").then(function(r){
+        if(!r.ok) throw new Error("Model server answered " + r.status + ".");
+        return r.text();
+      });
+    }).then(function(){
+      setLoad("Downloading IAN\u2019s brain\u2026", "Starting\u2026", 0);
+      lastTick = Date.now(); stopWatch();
+      stallTimer = setInterval(function(){
+        if(engine || !loading){ stopWatch(); return; }
+        if(Date.now() - lastTick > 90000){ stopWatch(); loadFailed("No download progress for 90 seconds. Check your connection, then tap Retry."); }
+      }, 5000);
+      return import(WEBLLM_URL);
+    }).then(function(webllm){
+      var cfg = Object.assign({}, webllm.prebuiltAppConfig, {useIndexedDBCache:true});
+      return webllm.CreateMLCEngine(MODEL_ID, {appConfig:cfg, initProgressCallback:function(r){
+        lastTick = Date.now();
+        setLoad("Downloading IAN\u2019s brain\u2026 " + Math.round((r.progress || 0) * 100) + "%", r.text, r.progress);
+      }});
+    }).then(function(e){
+      stopWatch();
+      if(engine) return;
+      engine = e; loading = false;
+      try{ localStorage.setItem("ian_model_ready", "1"); }catch(x){}
+      loadEl.classList.remove("go"); loadEl.classList.add("hide");
+      if(!busy) statusText.textContent = idleText();
+      addMsg("sys", "IAN\u2019s AI model is loaded. It now runs fully on your device.", 0, true);
+    }).catch(function(err){
+      stopWatch();
+      if(!engine) loadFailed(((err && err.message) ? err.message : "Download blocked or failed.").slice(0, 160));
+    });
+  }
+  loadBtn.addEventListener("click", loadModel);
+  function generateReply(messages){
+    if(!engine) return demoReply(messages);
+    var msgs = [{role:"system", content:SYSTEM}].concat(messages.map(function(m){ return {role:m.role, content:m.content}; }));
+    return engine.chat.completions.create({messages:msgs, max_tokens:160, temperature:0.5}).then(function(r){
+      var t = r.choices[0].message.content;
+      return (t && t.trim()) || "No answer generated. Try rephrasing.";
+    });
+  }
+
+  /* ---------- demo fallback ---------- */
+  function demoReply(messages){
+    return new Promise(function(resolve){
+      var last = messages[messages.length - 1], q = (last.q || last.content).toLowerCase().trim(), out;
+      var math = q.match(/^(?:what(?:’|')?s|what is|calc(?:ulate)?)?\s*(-?\d+(?:\.\d+)?)\s*([+\-*x\/])\s*(-?\d+(?:\.\d+)?)\s*\??$/);
+      if(last.file){ out = "I got your file, but I’m in demo mode so I can’t read it yet. Tap “Load AI” at the top first, then attach it again."; }
+      else if(math){
+        var a = parseFloat(math[1]), b = parseFloat(math[3]), op = math[2];
+        var r = op === "+" ? a + b : op === "-" ? a - b : op === "/" ? (b === 0 ? null : a / b) : a * b;
+        out = r === null ? "I can’t divide by zero." : a + " " + op + " " + b + " = " + (Math.round(r * 1e6) / 1e6);
+      } else if(/^(hi|hello|hey|yo)\b/.test(q)) out = "Hi! I’m IAN. Ask me something short and simple.";
+      else if(/your name|who are you/.test(q)) out = "I’m IAN, a small offline AI helper.";
+      else if(/\btime\b/.test(q)) out = "It’s " + fmt(Date.now()) + " on your device.";
+      else if(/\b(date|day)\b/.test(q)) out = "Today is " + new Date().toLocaleDateString([], {weekday:"long", month:"long", day:"numeric"}) + ".";
+      else if(/thank/.test(q)) out = "You’re welcome!";
+      else out = "I’m running in demo mode, so I can only handle greetings, simple maths, and the date or time. Tap “Load AI” at the top to download the real model.";
+      setTimeout(function(){ resolve(out); }, 700 + Math.random() * 600);
+    });
+  }
+
+  /* ---------- attach files ---------- */
+  var MAX_FILE_CHARS = 6000, pend = null, pendBusy = false, pendTok = 0, scriptCache = {};
+  var ICONS = {text:"TXT", pdf:"PDF", image:"IMG", video:"VID", audio:"AUD", other:"FILE"};
+  var TEXT_EXT = /\.(txt|md|csv|tsv|json|js|ts|py|html?|css|xml|log|ya?ml|ini|cfg|java|c|cpp|h|cs|go|rs|php|rb|sh|sql|kt|swift|tex|srt|vtt)$/i;
+  var fileIn = $("file"), pendEl = $("pend");
+  function human(n){ return n < 1024 ? n + " B" : n < 1048576 ? Math.round(n / 1024) + " KB" : (n / 1048576).toFixed(1) + " MB"; }
+  function fmtDur(s){ s = Math.round(s); return Math.floor(s / 60) + ":" + ("0" + (s % 60)).slice(-2); }
+  function loadScript(u){
+    if(!scriptCache[u]) scriptCache[u] = new Promise(function(res, rej){
+      var s = document.createElement("script"); s.src = u; s.onload = res;
+      s.onerror = function(){ delete scriptCache[u]; rej(new Error("helper library blocked or offline")); };
+      document.head.appendChild(s);
+    });
+    return scriptCache[u];
+  }
+  function kindOf(f){
+    var t = f.type || "";
+    if(t.indexOf("image/") === 0) return "image";
+    if(t.indexOf("video/") === 0) return "video";
+    if(t.indexOf("audio/") === 0) return "audio";
+    if(t === "application/pdf" || /\.pdf$/i.test(f.name)) return "pdf";
+    if(t.indexOf("text/") === 0 || t === "application/json" || TEXT_EXT.test(f.name)) return "text";
+    return "other";
+  }
+  function mediaInfo(f, tag){
+    return new Promise(function(res){
+      var url = URL.createObjectURL(f), el = document.createElement(tag), out = {dur:0, w:0, h:0, thumb:null};
+      var done = function(){ URL.revokeObjectURL(url); res(out); };
+      el.preload = "metadata"; el.muted = true; el.setAttribute("playsinline", "");
+      el.onerror = done;
+      el.onloadedmetadata = function(){
+        out.dur = el.duration || 0; out.w = el.videoWidth || 0; out.h = el.videoHeight || 0;
+        if(tag !== "video") return done();
+        el.currentTime = Math.min(1, out.dur / 2);
+      };
+      el.onseeked = function(){
+        try{
+          var cv = document.createElement("canvas"), r = 160 / (out.w || 160);
+          cv.width = 160; cv.height = Math.round((out.h || 90) * r);
+          cv.getContext("2d").drawImage(el, 0, 0, cv.width, cv.height);
+          out.thumb = cv.toDataURL("image/jpeg", 0.7);
+        }catch(e){}
+        done();
+      };
+      el.src = url;
+      setTimeout(done, 6000);
+    });
+  }
+  function readAttachment(f){
+    var k = kindOf(f), p = {name:f.name, size:f.size, kind:k, text:"", note:"", thumb:null};
+    if(k === "text") return f.slice(0, 300000).text().then(function(t){ p.text = t; p.note = t.length.toLocaleString() + " characters read"; return p; });
+    if(k === "pdf"){
+      return loadScript("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js").then(function(){
+        pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+        return f.arrayBuffer();
+      }).then(function(buf){ return pdfjsLib.getDocument({data:buf}).promise; }).then(function(doc){
+        var n = Math.min(doc.numPages, 10), jobs = [];
+        for(var i = 1; i <= n; i++) jobs.push(doc.getPage(i).then(function(pg){ return pg.getTextContent(); }).then(function(tc){
+          return tc.items.map(function(it){ return it.str; }).join(" ");
+        }));
+        return Promise.all(jobs).then(function(pgs){
+          p.text = pgs.join("\n\n").trim();
+          p.note = doc.numPages + " pages" + (doc.numPages > n ? " (first " + n + " read)" : "") + (p.text ? "" : " • no text found (scanned?)");
+          if(!p.text) p.text = "A PDF named “" + f.name + "” with no readable text.";
+          return p;
+        });
+      });
+    }
+    if(k === "image"){
+      p.thumb = URL.createObjectURL(f);
+      return loadScript("https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/5.1.1/tesseract.min.js").then(function(){
+        return Tesseract.recognize(f, "eng");
+      }).then(function(r){
+        p.text = ((r.data && r.data.text) || "").trim();
+        p.note = p.text ? "Text read from image (OCR)" : "No text found • I can’t see pictures";
+        if(!p.text) p.text = "An image named “" + f.name + "”. No readable text was found. You cannot see pictures.";
+        return p;
+      }).catch(function(){
+        p.note = "Couldn’t read text • needs internet once • I can’t see pictures";
+        p.text = "An image named “" + f.name + "”. Its text could not be read. You cannot see pictures.";
+        return p;
+      });
+    }
+    if(k === "video" || k === "audio"){
+      return mediaInfo(f, k).then(function(m){
+        p.thumb = m.thumb;
+        var bits = [m.dur ? fmtDur(m.dur) : "", m.w ? m.w + "×" + m.h : ""].filter(Boolean).join(", ");
+        p.note = "Details only • I can’t " + (k === "video" ? "watch" : "listen");
+        p.text = (k === "video" ? "A video" : "An audio file") + " named “" + f.name + "” (" + human(f.size) + (bits ? ", " + bits : "") + "). You cannot watch or listen, so only these details are known.";
+        return p;
+      });
+    }
+    p.note = "Can’t read this type • name and size only";
+    p.text = "A file named “" + f.name + "” (" + human(f.size) + ") of a type you cannot read.";
+    return Promise.resolve(p);
+  }
+  function finish(p){
+    if(p.text.length > MAX_FILE_CHARS){
+      p.text = p.text.slice(0, MAX_FILE_CHARS) + "\n[…truncated]";
+      p.note += " • first " + MAX_FILE_CHARS.toLocaleString() + " characters used";
+    }
+    return p;
+  }
+  function buildPrompt(p, q){ return "File “" + p.name + "” (" + p.kind + ") contents:\n" + p.text + "\n\nQuestion: " + q; }
+  function renderPend(){
+    pendEl.innerHTML = "";
+    if(!pend){ pendEl.classList.add("hide"); return; }
+    pendEl.classList.remove("hide");
+    var th = document.createElement("div"); th.className = "th";
+    if(pend.thumb){ var im = document.createElement("img"); im.src = pend.thumb; im.alt = ""; th.appendChild(im); } else th.textContent = ICONS[pend.kind] || "FILE";
+    var tx = document.createElement("div"); tx.className = "tx";
+    var b = document.createElement("b"); b.textContent = pend.name;
+    var s = document.createElement("small"); s.textContent = pendBusy ? "Reading…" : human(pend.size) + " • " + pend.note;
+    tx.appendChild(b); tx.appendChild(s);
+    var x = document.createElement("button"); x.type = "button"; x.className = "icon x"; x.textContent = "✕"; x.setAttribute("aria-label", "Remove file");
+    x.addEventListener("click", clearPend);
+    pendEl.appendChild(th); pendEl.appendChild(tx); pendEl.appendChild(x);
+  }
+  function clearPend(){ pendTok++; pend = null; pendBusy = false; fileIn.value = ""; renderPend(); }
+  $("attachBtn").addEventListener("click", function(){ if(!busy) fileIn.click(); });
+  fileIn.addEventListener("change", function(){
+    var f = fileIn.files && fileIn.files[0];
+    if(!f) return;
+    var tok = ++pendTok;
+    pend = {name:f.name, size:f.size, kind:kindOf(f), note:"", text:"", thumb:null};
+    pendBusy = true; renderPend();
+    readAttachment(f).catch(function(){
+      return {name:f.name, size:f.size, kind:kindOf(f), note:"Couldn’t read this file", text:"A file named “" + f.name + "” that could not be read.", thumb:null};
+    }).then(function(p){
+      if(tok !== pendTok) return;
+      pend = finish(p); pendBusy = false; renderPend();
+    });
+  });
+
+  /* ---------- commands + send ---------- */
+  function command(cmd){
+    if(cmd === "/help") addMsg("sys", "/help – show commands\n/history – open chat history\n/clear – erase this chat\n/exit – close IAN", 0, true);
+    else if(cmd === "/history") openDrawer();
+    else if(cmd === "/clear"){
+      var c = cur(); if(c){ c.msgs = []; c.title = "New chat"; c.ts = Date.now(); save(); }
+      renderLog(); addMsg("sys", "Chat cleared. Fresh start!", 0, true);
+    } else if(cmd === "/exit") addMsg("sys", "Goodbye! You can close this tab now.", 0, true);
+    else addMsg("sys", "Unknown command. Type /help to see commands.", 0, true);
+  }
+  function send(text){
+    text = text.trim();
+    if(busy || pendBusy) return;
+    if(!text && !pend) return;
+    box.value = ""; grow();
+    if(text.charAt(0) === "/"){ command(text.toLowerCase()); return; }
+    var c = cur() || newChat(), ts = Date.now();
+    var hasAtt = !!pend, fileCtx = null, shown = null, stored = null;
+    if(hasAtt){
+      text = text || "Summarize this file in simple words.";
+      fileCtx = buildPrompt(pend, text);
+      shown = {name:pend.name, kind:pend.kind, size:pend.size, thumb:pend.thumb};
+      stored = {name:pend.name, kind:pend.kind, size:pend.size};
+    }
+    addMsg("you", text, ts, true, shown);
+    if(hasAtt) clearPend();
+    var ctx = c.msgs.slice(-CONTEXT_MSGS).map(function(m){ return {role:m.role, content:m.ctx || m.content}; })
+                .concat([{role:"user", content:fileCtx || text, q:text, file:hasAtt}]);
+    setBusy(true);
+    var dots = document.createElement("div"); dots.className = "msg ian fx";
+    dots.innerHTML = '<div class="who">IAN</div><span class="dots"><span></span><span></span><span></span></span>';
+    log.appendChild(dots); scroll();
+    generateReply(ctx).then(function(answer){
+      dots.remove();
+      var ats = Date.now();
+      addMsg("ian", answer, ats, true);
+      if(fileCtx) c.msgs.forEach(function(m){ delete m.ctx; });
+      c.msgs.push({role:"user", content:text, ts:ts, att:stored, ctx:fileCtx || undefined}, {role:"assistant", content:answer, ts:ats});
+      c.msgs = c.msgs.slice(-MAX_MSGS); c.title = titleOf(c.msgs); c.ts = ats; save();
+    }).catch(function(){
+      dots.remove(); addMsg("sys", "Generation failed. Please try again.", 0, true);
+    }).then(function(){ setBusy(false); });
+  }
+
+  form.addEventListener("submit", function(e){ e.preventDefault(); send(box.value); });
+  box.addEventListener("keydown", function(e){ if(e.key === "Enter" && !e.shiftKey){ e.preventDefault(); send(box.value); } });
+  box.addEventListener("input", grow);
+  chips.forEach(function(c){ c.addEventListener("click", function(){ send(c.getAttribute("data-cmd")); }); });
+  $("theme").addEventListener("click", function(){
+    var r = document.documentElement, t = r.getAttribute("data-theme");
+    var dark = t === "dark" || (!t && window.matchMedia("(prefers-color-scheme: dark)").matches);
+    r.setAttribute("data-theme", dark ? "light" : "dark");
+  });
+
+  /* ---------- start ---------- */
+  load();
+  if(!cur()){ if(store.chats.length) store.current = store.chats[0].id; else newChat(); }
+  renderLog();
+  try{ if(localStorage.getItem("ian_model_ready") === "1") loadModel(); }catch(e){}
+})();
+</script>
+</body>
+</html>
